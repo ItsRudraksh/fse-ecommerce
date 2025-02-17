@@ -1,57 +1,60 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Link } from "react-router-dom"
-import { Search, Filter } from "lucide-react"
-import { products } from "../lib/api"
-import { useCart } from "../contexts/CartContext"
-import toast from "react-hot-toast"
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Search, Filter } from "lucide-react";
+import { products } from "../lib/api";
+import { useCart } from "../contexts/CartContext";
+import toast from "react-hot-toast";
 
 interface Product {
-  id: number
-  name: string
-  description: string
-  price: number
-  image: string
-  category: string
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  category: string;
 }
 
 const Products = () => {
-  const [allProducts, setAllProducts] = useState<Product[]>([])
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("")
-  const [loading, setLoading] = useState(true)
-  const { dispatch } = useCart()
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [loading, setLoading] = useState(true);
+  const { dispatch } = useCart();
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const { data } = await products.getAll()
-        setAllProducts(data)
-        setFilteredProducts(data)
+        const { data } = await products.getAll();
+        setAllProducts(data);
+        setFilteredProducts(data);
       } catch (error) {
-        toast.error("Failed to load products")
+        toast.error("Failed to load products");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchProducts()
-  }, [])
+    fetchProducts();
+  }, []);
 
   useEffect(() => {
     const filtered = allProducts.filter((product) => {
       const matchesSearch =
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesCategory = !selectedCategory || product.category === selectedCategory
-      return matchesSearch && matchesCategory
-    })
-    setFilteredProducts(filtered)
-  }, [searchTerm, selectedCategory, allProducts])
+        product.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory =
+        !selectedCategory || product.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+    setFilteredProducts(filtered);
+  }, [searchTerm, selectedCategory, allProducts]);
 
-  const categories = [...new Set(allProducts.map((product) => product.category))]
+  const categories = [
+    ...new Set(allProducts.map((product) => product.category)),
+  ];
 
   const addToCart = (product: Product) => {
     dispatch({
@@ -63,16 +66,16 @@ const Products = () => {
         quantity: 1,
         image: product.image,
       },
-    })
-    toast.success("Added to cart")
-  }
+    });
+    toast.success("Added to cart");
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
       </div>
-    )
+    );
   }
 
   return (
@@ -111,17 +114,30 @@ const Products = () => {
       {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredProducts.map((product) => (
-          <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div
+            key={product.id}
+            className="bg-white rounded-lg shadow-md overflow-hidden"
+          >
             <Link to={`/products/${product.id}`}>
-              <img src={product.image} alt={product.name} className="w-full h-48 object-cover" />
+              <img
+                src={product.image}
+                alt={product.name}
+                className="w-full h-48 object-cover"
+              />
             </Link>
             <div className="p-4">
               <Link to={`/products/${product.id}`}>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {product.name}
+                </h3>
               </Link>
-              <p className="text-gray-500 text-sm mb-4 line-clamp-2">{product.description}</p>
+              <p className="text-gray-500 text-sm mb-4 line-clamp-2">
+                {product.description}
+              </p>
               <div className="flex items-center justify-between">
-                <span className="text-lg font-bold text-gray-900">${product.price.toFixed(2)}</span>
+                <span className="text-lg font-bold text-gray-900">
+                  ${Number(product.price).toFixed(2)}
+                </span>
                 <button
                   onClick={() => addToCart(product)}
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
@@ -136,13 +152,16 @@ const Products = () => {
 
       {filteredProducts.length === 0 && (
         <div className="text-center py-12">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-          <p className="text-gray-500">Try adjusting your search or filter to find what you're looking for.</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No products found
+          </h3>
+          <p className="text-gray-500">
+            Try adjusting your search or filter to find what you're looking for.
+          </p>
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Products
-
+export default Products;

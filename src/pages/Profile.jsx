@@ -1,67 +1,53 @@
-"use client"
-
-import { useState, useEffect } from "react"
-import { Package, Clock, CheckCircle, XCircle } from "lucide-react"
-import { useAuth } from "../contexts/AuthContext"
-import toast from "react-hot-toast"
-
-interface OrderItem {
-  id: number
-  productId: number
-  quantity: number
-  price: number
-  productName: string
-}
-
-interface Order {
-  id: number
-  total: number
-  status: "pending" | "processing" | "shipped" | "delivered"
-  createdAt: string
-  items: OrderItem[]
-}
+import { useState, useEffect } from "react";
+import { Package, Clock, CheckCircle, XCircle } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import toast from "react-hot-toast";
+import { orders as ordersApi } from "../lib/api";
 
 const Profile = () => {
-  const { user } = useAuth()
-  const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
+  const { user } = useAuth();
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const { data } = await orders.getMyOrders()
-        setOrders(data)
-      } catch (error) {
-        toast.error("Failed to load orders")
-      } finally {
-        setLoading(false)
-      }
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const { data } = await ordersApi.getMyOrders();
+      console.log("Fetched Orders:", data); // Debugging
+      setOrders(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      toast.error("Failed to load orders");
+      setOrders([]);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    fetchOrders()
-  }, [])
-
-  const getStatusIcon = (status: Order["status"]) => {
+  const getStatusIcon = (status) => {
     switch (status) {
       case "pending":
-        return <Clock className="h-5 w-5 text-yellow-500" />
+        return <Clock className="h-5 w-5 text-yellow-500" />;
       case "processing":
-        return <Package className="h-5 w-5 text-blue-500" />
+        return <Package className="h-5 w-5 text-blue-500" />;
       case "shipped":
-        return <Package className="h-5 w-5 text-purple-500" />
+        return <Package className="h-5 w-5 text-purple-500" />;
       case "delivered":
-        return <CheckCircle className="h-5 w-5 text-green-500" />
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
       default:
-        return <XCircle className="h-5 w-5 text-red-500" />
+        return <XCircle className="h-5 w-5 text-red-500" />;
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
       </div>
-    )
+    );
   }
 
   return (
@@ -90,8 +76,12 @@ const Profile = () => {
         {orders.length === 0 ? (
           <div className="p-6 text-center">
             <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
-            <p className="text-gray-500">When you place an order, it will appear here.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No orders yet
+            </h3>
+            <p className="text-gray-500">
+              When you place an order, it will appear here.
+            </p>
           </div>
         ) : (
           <div className="divide-y">
@@ -100,22 +90,30 @@ const Profile = () => {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-sm text-gray-500">Order #{order.id}</p>
-                    <p className="text-sm text-gray-500">Placed on {new Date(order.createdAt).toLocaleDateString()}</p>
+                    <p className="text-sm text-gray-500">
+                      Placed on {new Date(order.createdAt).toLocaleDateString()}
+                    </p>
                   </div>
                   <div className="flex items-center">
                     {getStatusIcon(order.status)}
-                    <span className="ml-2 text-sm font-medium capitalize">{order.status}</span>
+                    <span className="ml-2 text-sm font-medium capitalize">
+                      {order.status}
+                    </span>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  {order.items.map((item) => (
+                  {orders.map((item) => (
                     <div key={item.id} className="flex items-center">
                       <div className="flex-1">
                         <p className="font-medium">{item.productName}</p>
-                        <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
+                        <p className="text-sm text-gray-500">
+                          Quantity: {item.quantity}
+                        </p>
                       </div>
-                      <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+                      <p className="font-medium">
+                        ${(item.price * item.quantity).toFixed(2)}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -123,7 +121,9 @@ const Profile = () => {
                 <div className="mt-4 pt-4 border-t">
                   <div className="flex justify-between">
                     <span className="font-medium">Total</span>
-                    <span className="font-medium">${order.total.toFixed(2)}</span>
+                    <span className="font-medium">
+                      ${Number(order.total).toFixed(2)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -132,8 +132,7 @@ const Profile = () => {
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Profile
-
+export default Profile;

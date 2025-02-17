@@ -1,3 +1,5 @@
+import { fileURLToPath } from "url"
+import { dirname, join } from "path"
 import express from "express"
 import cors from "cors"
 import helmet from "helmet"
@@ -11,7 +13,8 @@ import orderRoutes from "./routes/orders.js"
 dotenv.config()
 
 const app = express()
-
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 // Middleware
 app.use(express.json())
 app.use(cookieParser())
@@ -22,6 +25,8 @@ app.use(
     credentials: true,
   }),
 )
+// Serve static files from the 'uploads' directory
+app.use("/uploads", express.static(join(__dirname, "uploads")))
 
 // Rate limiting
 const limiter = rateLimit({
