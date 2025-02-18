@@ -19,7 +19,7 @@ const Navbar = () => {
 
   //Close menu when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    const handleClickOutside = (event:any) => {
       if (
         profileMenuRef.current &&
         !profileMenuRef.current.contains(event.target)
