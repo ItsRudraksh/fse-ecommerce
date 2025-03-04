@@ -23,6 +23,7 @@ export const products = {
 export const orders = {
   getMyOrders: () => api.get("/orders/my-orders"),
   create: (data) => api.post("/orders", data),
+  getAll: () => api.get("/orders"),
   getAllOrders: () => api.get("/orders"),
   updateStatus: (id, status) => api.put(`/orders/${id}/status`, { status }),
 }

@@ -1,117 +1,3 @@
-// import express from "express"
-// import { z } from "zod"
-// import pool from "../config/db.js"
-// import { adminAuth } from "../middleware/auth.js"
-// import multer from "multer"
-
-// const router = express.Router()
-
-// const productSchema = z.object({
-//   name: z.string().min(2),
-//   description: z.string(),
-//   price: z.number().positive(),
-//   image: z.string(),
-//   category: z.string(),
-// })
-
-// // Multer configuration (example - adjust as needed)
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, "uploads/") // Store uploaded files in the 'uploads' directory
-//   },
-//   filename: (req, file, cb) => {
-//     cb(null, Date.now() + "-" + file.originalname) // Rename the file
-//   },
-// })
-
-// const upload = multer({ storage: storage })
-
-// // Get all products
-// router.get("/", async (req, res) => {
-//   try {
-//     const [products] = await pool.execute("SELECT * FROM products")
-//     res.json(products)
-//   } catch (err) {
-//     console.error(err)
-//     res.status(500).json({ message: "Server error" })
-//   }
-// })
-
-// // Get single product
-// router.get("/:id", async (req, res) => {
-//   try {
-//     const [products] = await pool.execute("SELECT * FROM products WHERE id = ?", [req.params.id])
-
-//     if (!Array.isArray(products) || products.length === 0) {
-//       return res.status(404).json({ message: "Product not found" })
-//     }
-
-//     res.json(products[0])
-//   } catch (err) {
-//     console.error(err)
-//     res.status(500).json({ message: "Server error" })
-//   }
-// })
-
-// // Create product (admin only)
-// router.post("/", adminAuth, async (req, res) => {
-//   try {
-//     const product = productSchema.parse(req.body)
-
-//     const [result] = await pool.execute(
-//       "INSERT INTO products (name, description, price, image, category) VALUES (?, ?, ?, ?, ?)",
-//       [product.name, product.description, product.price, product.image, product.category],
-//     )
-
-//     res.status(201).json({
-//       message: "Product created successfully",
-//       productId: result.insertId,
-//     })
-//   } catch (err) {
-//     console.error(err)
-//     res.status(500).json({ message: "Server error" })
-//   }
-// })
-
-// // Update product (admin only)
-// router.put("/:id", adminAuth, async (req, res) => {
-//   try {
-//     const product = productSchema.parse(req.body)
-
-//     const [result] = await pool.execute(
-//       "UPDATE products SET name = ?, description = ?, price = ?, image = ?, category = ? WHERE id = ?",
-//       [product.name, product.description, product.price, product.image, product.category, req.params.id],
-//     )
-
-//     if (result.affectedRows === 0) {
-//       return res.status(404).json({ message: "Product not found" })
-//     }
-
-//     res.json({ message: "Product updated successfully" })
-//   } catch (err) {
-//     console.error(err)
-//     res.status(500).json({ message: "Server error" })
-//   }
-// })
-
-// // Delete product (admin only)
-// router.delete("/:id", adminAuth, async (req, res) => {
-//   try {
-//     const [result] = await pool.execute("DELETE FROM products WHERE id = ?", [req.params.id])
-
-//     if (result.affectedRows === 0) {
-//       return res.status(404).json({ message: "Product not found" })
-//     }
-
-//     res.json({ message: "Product deleted successfully" })
-//   } catch (err) {
-//     console.error(err)
-//     res.status(500).json({ message: "Server error" })
-//   }
-// })
-
-// export default router
-
 import express from "express"
 import { z } from "zod"
 import pool from "../config/db.js"
@@ -143,7 +29,7 @@ const upload = multer({ storage: storage })
 // Get all products
 router.get("/", async (req, res) => {
   try {
-    const [products] = await pool.execute("SELECT * FROM products")
+    const [products] = await pool.execute("SELECT * FROM products WHERE isDeleted = FALSE OR isDeleted IS NULL")
     res.json(products)
   } catch (err) {
     console.error(err)
@@ -154,7 +40,10 @@ router.get("/", async (req, res) => {
 // Get single product
 router.get("/:id", async (req, res) => {
   try {
-    const [products] = await pool.execute("SELECT * FROM products WHERE id = ?", [req.params.id])
+    const [products] = await pool.execute(
+      "SELECT * FROM products WHERE id = ? AND (isDeleted = FALSE OR isDeleted IS NULL)", 
+      [req.params.id]
+    )
 
     if (!Array.isArray(products) || products.length === 0) {
       return res.status(404).json({ message: "Product not found" })
@@ -235,17 +124,67 @@ router.put("/:id", adminAuth, upload.single("image"), async (req, res) => {
 // Delete product (admin only)
 router.delete("/:id", adminAuth, async (req, res) => {
   try {
-    const [result] = await pool.execute("DELETE FROM products WHERE id = ?", [req.params.id])
+    // First check if the product is referenced in any order items
+    const [orderItems] = await pool.execute(
+      "SELECT COUNT(*) as count FROM order_items WHERE productId = ?",
+      [req.params.id]
+    );
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Product not found" })
+    if (orderItems[0].count > 0) {
+      // Product is referenced in orders, implement soft delete instead
+      const [updateResult] = await pool.execute(
+        "UPDATE products SET isDeleted = TRUE WHERE id = ?",
+        [req.params.id]
+      );
+
+      if (updateResult.affectedRows === 0) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      return res.json({ 
+        message: "Product has been soft deleted as it is referenced in orders",
+        softDelete: true
+      });
     }
 
-    res.json({ message: "Product deleted successfully" })
+    // If not referenced, proceed with hard delete
+    const [result] = await pool.execute("DELETE FROM products WHERE id = ?", [req.params.id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.json({ message: "Product deleted successfully" });
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: "Server error" })
+    console.error(err);
+    
+    // Handle foreign key constraint error specifically
+    if (err.code === 'ER_ROW_IS_REFERENCED_2') {
+      // Implement soft delete as fallback
+      try {
+        const [updateResult] = await pool.execute(
+          "UPDATE products SET isDeleted = TRUE WHERE id = ?",
+          [req.params.id]
+        );
+        
+        if (updateResult.affectedRows > 0) {
+          return res.json({ 
+            message: "Product has been soft deleted as it is referenced in orders",
+            softDelete: true
+          });
+        }
+      } catch (updateErr) {
+        console.error("Failed to soft delete:", updateErr);
+      }
+      
+      return res.status(400).json({ 
+        message: "Cannot delete product as it is referenced in orders. The product has been hidden instead.",
+        error: "PRODUCT_IN_USE"
+      });
+    }
+    
+    res.status(500).json({ message: "Server error" });
   }
-})
+});
 
 export default router

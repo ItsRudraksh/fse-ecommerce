@@ -119,7 +119,22 @@ router.get("/", adminAuth, async (req, res) => {
        FROM orders o 
        JOIN users u ON o.userId = u.id`,
     )
-    res.json(orders)
+
+    // Fetch order items for each order
+    const ordersWithItems = await Promise.all(
+      orders.map(async (order) => {
+        const [items] = await pool.execute(
+          `SELECT oi.id, p.name, oi.quantity, oi.price, p.id as productId 
+           FROM order_items oi 
+           JOIN products p ON oi.productId = p.id 
+           WHERE oi.orderId = ?`,
+          [order.id]
+        );
+        return { ...order, items };
+      })
+    );
+
+    res.json(ordersWithItems)
   } catch (err) {
     console.error(err)
     res.status(500).json({ message: "Server error" })

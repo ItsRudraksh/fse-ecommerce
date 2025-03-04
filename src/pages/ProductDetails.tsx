@@ -5,6 +5,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, Minus, Plus, ShoppingCart } from "lucide-react";
 import { products } from "../lib/api";
 import { useCart } from "../contexts/CartContext";
+import { useTheme } from "../contexts/ThemeContext";
 import toast from "react-hot-toast";
 
 interface Product {
@@ -23,6 +24,7 @@ const ProductDetails = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const { dispatch } = useCart();
+  const { isDarkMode } = useTheme();
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -58,17 +60,17 @@ const ProductDetails = () => {
 
   if (loading || !product) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600 dark:border-primary-400"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-300">
       <button
         onClick={() => navigate("/products")}
-        className="flex items-center text-gray-600 hover:text-gray-900 mb-8"
+        className="flex items-center text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 mb-8 transition-colors duration-300"
       >
         <ChevronLeft className="h-5 w-5 mr-1" />
         Back to Products
@@ -76,7 +78,7 @@ const ProductDetails = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Product Image */}
-        <div className="relative">
+        <div className="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md transition-colors duration-300">
           <img
             src={product.image}
             alt={product.name}
@@ -85,35 +87,39 @@ const ProductDetails = () => {
         </div>
 
         {/* Product Info */}
-        <div className="space-y-6">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md space-y-6 transition-colors duration-300">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 transition-colors duration-300">
               {product.name}
             </h1>
-            <p className="text-lg text-gray-500">{product.category}</p>
+            <p className="text-lg text-gray-500 dark:text-gray-400 transition-colors duration-300">
+              {product.category}
+            </p>
           </div>
 
-          <div className="border-t border-b border-gray-200 py-6">
-            <p className="text-gray-700 text-lg leading-relaxed">
+          <div className="border-t border-b border-gray-200 dark:border-gray-700 py-6 transition-colors duration-300">
+            <p className="text-gray-700 dark:text-gray-300 text-lg leading-relaxed transition-colors duration-300">
               {product.description}
             </p>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-3xl font-bold text-gray-900">
+            <span className="text-3xl font-bold text-gray-900 dark:text-white transition-colors duration-300">
               ${Number(product.price).toFixed(2)}
             </span>
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="p-2 rounded-full hover:bg-gray-100"
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors duration-300"
               >
                 <Minus className="h-5 w-5" />
               </button>
-              <span className="text-xl font-medium">{quantity}</span>
+              <span className="text-xl font-medium text-gray-900 dark:text-white transition-colors duration-300">
+                {quantity}
+              </span>
               <button
                 onClick={() => setQuantity(quantity + 1)}
-                className="p-2 rounded-full hover:bg-gray-100"
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors duration-300"
               >
                 <Plus className="h-5 w-5" />
               </button>
@@ -122,7 +128,7 @@ const ProductDetails = () => {
 
           <button
             onClick={addToCart}
-            className="w-full bg-blue-600 text-white px-6 py-3 rounded-md font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center"
+            className="w-full bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 text-white px-6 py-3 rounded-md font-semibold transition-colors duration-300 flex items-center justify-center"
           >
             <ShoppingCart className="h-5 w-5 mr-2" />
             Add to Cart
