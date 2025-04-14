@@ -33,7 +33,7 @@ const Register = () => {
     setLoading(true);
     try {
       // Call the verify-otp endpoint
-      await fetch("http://localhost:3000/api/auth/verify-otp", {
+      await fetch("http://localhost:5000/api/auth/verify-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -68,7 +68,7 @@ const Register = () => {
 
     try {
       // Call the register endpoint
-      await fetch("http://localhost:3000/api/auth/register", {
+      await fetch("http://localhost:5000/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

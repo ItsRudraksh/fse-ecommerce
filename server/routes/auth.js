@@ -5,6 +5,7 @@ import { z } from "zod";
 import pool from "../config/db.js";
 import { auth } from "../middleware/auth.js";
 import { sendOTP } from "../utils/email.js"; // Import the sendOTP function
+import admin from "firebase-admin"; // Import Firebase Admin
 
 const router = express.Router();
 
@@ -163,6 +164,93 @@ router.post("/login", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Google Sign-In Route
+router.post("/google-signin", async (req, res) => {
+  const { token: idToken } = req.body;
+
+  if (!idToken) {
+    return res.status(400).json({ message: "ID token is required." });
+  }
+
+  try {
+    // Verify the ID token using Firebase Admin SDK
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const firebaseUid = decodedToken.uid;
+    const email = decodedToken.email;
+    const name = decodedToken.name || decodedToken.email?.split("@")[0]; // Use name or derive from email
+
+    let user;
+    let userId;
+    let isAdmin = false; // Default isAdmin to false for new Google sign-ins
+
+    // 1. Check if user exists by firebaseUid
+    const [usersByUid] = await pool.execute(
+      "SELECT * FROM users WHERE firebaseUid = ? AND (isDeleted = FALSE OR isDeleted IS NULL)",
+      [firebaseUid]
+    );
+
+    if (Array.isArray(usersByUid) && usersByUid.length > 0) {
+      user = usersByUid[0];
+      userId = user.id;
+      isAdmin = user.isAdmin;
+    } else {
+      // 2. If not found by UID, check by email
+      const [usersByEmail] = await pool.execute(
+        "SELECT * FROM users WHERE email = ? AND (isDeleted = FALSE OR isDeleted IS NULL)",
+        [email]
+      );
+
+      if (Array.isArray(usersByEmail) && usersByEmail.length > 0) {
+        // 2a. Email exists, link Firebase UID to existing account
+        user = usersByEmail[0];
+        userId = user.id;
+        isAdmin = user.isAdmin; // Keep existing isAdmin status
+        await pool.execute("UPDATE users SET firebaseUid = ? WHERE id = ?", [
+          firebaseUid,
+          userId,
+        ]);
+      } else {
+        // 3. If not found by UID or email, create a new user
+        // Note: We set password to NULL, ensure your DB schema allows this or handle differently
+        const [result] = await pool.execute(
+          "INSERT INTO users (name, email, firebaseUid, password) VALUES (?, ?, ?, NULL)",
+          [name, email, firebaseUid]
+        );
+        userId = result.insertId;
+        // Newly created user via Google is not an admin by default
+        isAdmin = false;
+      }
+    }
+
+    // Generate our application's JWT
+    const appToken = jwt.sign(
+      { id: userId, isAdmin: isAdmin }, // Use the determined userId and isAdmin status
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    res.cookie("token", appToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    });
+
+    res.json({ message: "Logged in successfully via Google." });
+  } catch (error) {
+    console.error("Error during Google sign-in:", error);
+    if (
+      error.code === "auth/id-token-expired" ||
+      error.code === "auth/argument-error"
+    ) {
+      return res
+        .status(401)
+        .json({ message: "Invalid or expired Firebase token." });
+    }
+    res.status(500).json({ message: "Server error during Google sign-in." });
   }
 });
 

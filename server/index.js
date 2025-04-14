@@ -6,11 +6,25 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
+import admin from "firebase-admin";
 import authRoutes from "./routes/auth.js";
 import productRoutes from "./routes/products.js";
 import orderRoutes from "./routes/orders.js";
+// import serviceAccount from "../account-key.json";
 
 dotenv.config();
+
+// Initialize Firebase Admin SDK
+try {
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault(), // Reads GOOGLE_APPLICATION_CREDENTIALS env var
+  });
+  console.log("Firebase Admin SDK initialized successfully.");
+} catch (error) {
+  console.error("Error initializing Firebase Admin SDK:", error);
+  // Optionally exit the process if Firebase Admin is critical
+  // process.exit(1);
+}
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
