@@ -308,14 +308,14 @@ const ProductManagement = () => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
         const response = await products.delete(id);
-        
+
         // Check if the product was soft deleted
         if (response.data && response.data.softDelete) {
           toast.success(response.data.message || "Product has been hidden from the store");
         } else {
           toast.success("Product deleted successfully");
         }
-        
+
         fetchProducts();
       } catch (error) {
         // Check if the error is due to product being in use
@@ -466,13 +466,13 @@ const OrderManagement = () => {
   const fetchOrders = async () => {
     try {
       const { data } = await ordersApi.getAll();
-      
+
       // Process orders to add empty items array if not present
       const processedOrders = data.map(order => ({
         ...order,
         items: order.items || []
       }));
-      
+
       setOrderList(processedOrders);
     } catch (error) {
       toast.error("Failed to load orders");
@@ -520,15 +520,14 @@ const OrderManagement = () => {
                     <div className="ml-2 flex-shrink-0 flex">
                       <p
                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${
-                          order.status === "pending"
+                        ${order.status === "pending"
                             ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
                             : order.status === "processing"
-                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                            : order.status === "shipped"
-                            ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
-                            : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                        } transition-colors duration-300`}
+                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                              : order.status === "shipped"
+                                ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                                : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                          } transition-colors duration-300`}
                       >
                         {order.status.charAt(0).toUpperCase() +
                           order.status.slice(1)}
@@ -581,41 +580,37 @@ const OrderManagement = () => {
                   <div className="flex space-x-2">
                     <button
                       onClick={() => updateOrderStatus(order.id, "pending")}
-                      className={`px-3 py-1 text-xs rounded-md ${
-                        order.status === "pending"
+                      className={`px-3 py-1 text-xs rounded-md ${order.status === "pending"
                           ? "bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200"
                           : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-yellow-100 dark:hover:bg-yellow-900"
-                      } transition-colors duration-300`}
+                        } transition-colors duration-300`}
                     >
                       Pending
                     </button>
                     <button
                       onClick={() => updateOrderStatus(order.id, "processing")}
-                      className={`px-3 py-1 text-xs rounded-md ${
-                        order.status === "processing"
+                      className={`px-3 py-1 text-xs rounded-md ${order.status === "processing"
                           ? "bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200"
                           : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-900"
-                      } transition-colors duration-300`}
+                        } transition-colors duration-300`}
                     >
                       Processing
                     </button>
                     <button
                       onClick={() => updateOrderStatus(order.id, "shipped")}
-                      className={`px-3 py-1 text-xs rounded-md ${
-                        order.status === "shipped"
+                      className={`px-3 py-1 text-xs rounded-md ${order.status === "shipped"
                           ? "bg-purple-200 text-purple-800 dark:bg-purple-800 dark:text-purple-200"
                           : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-purple-100 dark:hover:bg-purple-900"
-                      } transition-colors duration-300`}
+                        } transition-colors duration-300`}
                     >
                       Shipped
                     </button>
                     <button
                       onClick={() => updateOrderStatus(order.id, "delivered")}
-                      className={`px-3 py-1 text-xs rounded-md ${
-                        order.status === "delivered"
+                      className={`px-3 py-1 text-xs rounded-md ${order.status === "delivered"
                           ? "bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200"
                           : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-green-900"
-                      } transition-colors duration-300`}
+                        } transition-colors duration-300`}
                     >
                       Delivered
                     </button>
@@ -650,11 +645,10 @@ const AdminDashboard = () => {
             <nav className="space-y-1">
               <Link
                 to="/admin"
-                className={`flex items-center px-4 py-3 text-sm font-medium ${
-                  isActive("/admin")
+                className={`flex items-center px-4 py-3 text-sm font-medium ${isActive("/admin")
                     ? "bg-primary-50 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
                     : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                } transition-colors duration-300`}
+                  } transition-colors duration-300`}
               >
                 <Package className="mr-3 h-5 w-5" />
                 Products
@@ -662,11 +656,10 @@ const AdminDashboard = () => {
               </Link>
               <Link
                 to="/admin/orders"
-                className={`flex items-center px-4 py-3 text-sm font-medium ${
-                  isActive("/admin/orders")
+                className={`flex items-center px-4 py-3 text-sm font-medium ${isActive("/admin/orders")
                     ? "bg-primary-50 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
                     : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                } transition-colors duration-300`}
+                  } transition-colors duration-300`}
               >
                 <ShoppingBag className="mr-3 h-5 w-5" />
                 Orders

@@ -83,7 +83,7 @@ const Products = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white transition-colors duration-300">Products</h1>
-      
+
       {/* Search and Filter */}
       <div className="mb-8 space-y-4 md:space-y-0 md:flex md:items-center md:justify-between">
         <div className="relative flex-1 max-w-xl">

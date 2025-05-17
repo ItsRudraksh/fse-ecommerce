@@ -39,6 +39,8 @@ const Profile = () => {
         return <Package className="h-5 w-5 text-purple-500" />;
       case "delivered":
         return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case "paid":
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
       default:
         return <XCircle className="h-5 w-5 text-red-500" />;
     }
@@ -56,15 +58,25 @@ const Profile = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       {/* Profile Header */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8 transition-colors duration-300">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 transition-colors duration-300">My Profile</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 transition-colors duration-300">
+          My Profile
+        </h1>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">Name</p>
-            <p className="text-lg font-medium text-gray-900 dark:text-white transition-colors duration-300">{user?.name}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">
+              Name
+            </p>
+            <p className="text-lg font-medium text-gray-900 dark:text-white transition-colors duration-300">
+              {user?.name}
+            </p>
           </div>
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">Email</p>
-            <p className="text-lg font-medium text-gray-900 dark:text-white transition-colors duration-300">{user?.email}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">
+              Email
+            </p>
+            <p className="text-lg font-medium text-gray-900 dark:text-white transition-colors duration-300">
+              {user?.email}
+            </p>
           </div>
         </div>
       </div>
@@ -72,7 +84,9 @@ const Profile = () => {
       {/* Order History */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md transition-colors duration-300">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white transition-colors duration-300">Order History</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white transition-colors duration-300">
+            Order History
+          </h2>
         </div>
 
         {orders.length === 0 ? (
@@ -88,10 +102,14 @@ const Profile = () => {
         ) : (
           <div className="divide-y divide-gray-200 dark:divide-gray-700 transition-colors duration-300">
             {orders.map((order) => (
-              <div key={order.id} className="p-6">
+              <div
+                key={order.id}
+                className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">Order #{order.id}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">
+                      Order #{order.id}
+                    </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">
                       Placed on {new Date(order.createdAt).toLocaleDateString()}
                     </p>
@@ -106,9 +124,13 @@ const Profile = () => {
 
                 <div className="space-y-4">
                   {orders.map((item) => (
-                    <div key={item.id} className="flex items-center">
+                    <div
+                      key={item.id}
+                      className="flex items-center">
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900 dark:text-white transition-colors duration-300">{item.productName}</p>
+                        <p className="font-medium text-gray-900 dark:text-white transition-colors duration-300">
+                          {item.productName}
+                        </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">
                           Quantity: {item.quantity}
                         </p>
@@ -122,7 +144,9 @@ const Profile = () => {
 
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 transition-colors duration-300">
                   <div className="flex justify-between">
-                    <span className="font-medium text-gray-900 dark:text-white transition-colors duration-300">Total</span>
+                    <span className="font-medium text-gray-900 dark:text-white transition-colors duration-300">
+                      Total
+                    </span>
                     <span className="font-medium text-gray-900 dark:text-white transition-colors duration-300">
                       ${Number(order.total).toFixed(2)}
                     </span>

@@ -24,7 +24,9 @@ CREATE TABLE orders (
   id INT AUTO_INCREMENT PRIMARY KEY,
   userId INT,
   total DECIMAL(10, 2) NOT NULL,
-  status ENUM('pending', 'processing', 'shipped', 'delivered') DEFAULT 'pending',
+  status ENUM('pending', 'processing', 'shipped', 'delivered', 'paid', 'failed') DEFAULT 'pending',
+  razorpay_order_id VARCHAR(255) NULL,
+  payment_id VARCHAR(255) NULL,
   isDeleted BOOLEAN DEFAULT false,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (userId) REFERENCES users(id)

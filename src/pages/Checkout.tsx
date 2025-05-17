@@ -1,13 +1,28 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CreditCard, Truck, Home } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
-import { orders } from "../lib/api";
+import { orders, auth } from "../lib/api";
 import toast from "react-hot-toast";
 import { useTheme } from "../contexts/ThemeContext";
+
+// Define basic types for CartContext state and items
+// You should replace these with your actual types from CartContext
+interface CartItem {
+  id: number;
+  quantity: number;
+  price: number;
+  name: string; // Added for order summary
+  image: string; // Added for order summary
+}
+
+interface CartState {
+  items: CartItem[];
+  total: number;
+}
 
 interface ShippingDetails {
   fullName: string;
@@ -18,11 +33,14 @@ interface ShippingDetails {
   phone: string;
 }
 
+// Removed loadRazorpayScript function
+
 const Checkout = () => {
   const navigate = useNavigate();
-  const { state, dispatch } = useCart();
-  const { isDarkMode } = useTheme();
+  const { state, dispatch } = useCart() as { state: CartState; dispatch: React.Dispatch<any> }; // Added type assertion
+  // const { isDarkMode } = useTheme(); // Removed as it's unused
   const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [shippingDetails, setShippingDetails] = useState<ShippingDetails>({
     fullName: "",
     address: "",
@@ -31,6 +49,20 @@ const Checkout = () => {
     zipCode: "",
     phone: "",
   });
+
+  useEffect(() => {
+    // Fetch current user details
+    const fetchUser = async () => {
+      try {
+        const userData = await auth.getMe();
+        setCurrentUser(userData.data);
+      } catch (error) {
+        console.error("Failed to fetch user details", error);
+        toast.error("Failed to fetch user details. Please ensure you are logged in.");
+      }
+    };
+    fetchUser();
+  }, []); // Removed Razorpay script loading from useEffect
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -44,33 +76,102 @@ const Checkout = () => {
     e.preventDefault();
     setLoading(true);
 
+    if (!currentUser) {
+      toast.error("User details not loaded. Please wait or try logging in again.");
+      setLoading(false);
+      return;
+    }
+
+    if (!(window as any).Razorpay) {
+      toast.error("Razorpay SDK not loaded. Please check your internet connection or refresh the page.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Create order items from cart
-      const orderItems = state.items.map((item) => ({
+      // 1. Create order in your database
+      const orderItems = state.items.map((item: CartItem) => ({ // Added type for item
         productId: item.id,
         quantity: item.quantity,
         price: Number(item.price),
       }));
 
-      // Submit order
-      await orders.create({
+      const dbOrderResponse = await orders.create({
         items: orderItems,
         total: state.total,
       });
 
-      // Clear cart
-      dispatch({ type: "CLEAR_CART" });
+      const dbOrderId = dbOrderResponse.data.orderId;
 
-      toast.success("Order placed successfully!");
-      navigate("/profile");
-    } catch (error) {
-      toast.error("Failed to place order. Please try again.");
+      // 2. Create Razorpay order
+      const razorpayOrderResponse = await orders.createRazorpayOrder({
+        amount: state.total,
+        currency: "INR",
+        receipt: `receipt_order_${dbOrderId}`,
+        order_id_from_db: dbOrderId,
+      });
+
+      const razorpayOrder = razorpayOrderResponse.data;
+
+      // 3. Open Razorpay Checkout
+      const options = {
+        key: (import.meta as any).env.VITE_RAZORPAY_KEY_ID, // Type assertion for import.meta.env
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        name: "EcoShop", // Updated App Name
+        description: "Order Payment",
+        image: "/vite.svg", // Updated with placeholder logo from index.html
+        order_id: razorpayOrder.id,
+        handler: async function (response: any) {
+          try {
+            // 4. Verify Payment
+            await orders.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            dispatch({ type: "CLEAR_CART" });
+            toast.success("Payment successful! Order placed.");
+            navigate("/profile");
+          } catch (verifyError) {
+            console.error("Payment verification failed:", verifyError);
+            toast.error("Payment verification failed. Please contact support.");
+          }
+        },
+        prefill: {
+          name: shippingDetails.fullName || currentUser.name,
+          email: currentUser.email,
+          contact: shippingDetails.phone,
+        },
+        notes: {
+          address: `${shippingDetails.address}, ${shippingDetails.city}, ${shippingDetails.state} - ${shippingDetails.zipCode}`,
+          database_order_id: dbOrderId.toString(),
+        },
+        theme: {
+          color: "#4F46E5", // Example: Indigo color, adjust as needed
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on("payment.failed", function (response: any) {
+        console.error("Razorpay payment failed:", response.error);
+        toast.error(`Payment Failed: ${response.error.description || response.error.reason}`);
+        // Consider updating order status to 'failed' in DB
+        // orders.updateStatus(dbOrderId, { status: 'failed' }); 
+      });
+      rzp.open();
+
+    } catch (error: any) {
+      console.error("Checkout process failed:", error);
+      const errorMessage = error.response?.data?.message || "Failed to process order. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  if (state.items.length === 0) {
+  if (state.items.length === 0 && !loading) { // Added !loading check to prevent redirect while processing
     navigate("/cart");
     return null;
   }
@@ -87,7 +188,8 @@ const Checkout = () => {
               <Home className="h-6 w-6 text-primary-600 dark:text-primary-400 mr-2 transition-colors duration-300" />
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white transition-colors duration-300">Shipping Information</h2>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Removed onSubmit from form as it's handled by the button onClick */}
+            <form className="space-y-4">
               <div>
                 <label
                   htmlFor="fullName"
@@ -197,7 +299,7 @@ const Checkout = () => {
             </form>
           </div>
 
-          {/* Payment Information */}
+          {/* Payment Information - Can be removed or repurposed if only Razorpay is used */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors duration-300">
             <div className="flex items-center mb-4">
               <CreditCard className="h-6 w-6 text-primary-600 dark:text-primary-400 mr-2 transition-colors duration-300" />
@@ -205,7 +307,7 @@ const Checkout = () => {
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md transition-colors duration-300">
               <p className="text-gray-600 dark:text-gray-300 transition-colors duration-300">
-                This is a demo application. No real payment will be processed.
+                You will be redirected to Razorpay for secure payment.
               </p>
             </div>
           </div>
@@ -216,10 +318,10 @@ const Checkout = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors duration-300">
             <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white transition-colors duration-300">Order Summary</h2>
             <div className="space-y-4">
-              {state.items.map((item) => (
+              {state.items.map((item: CartItem) => ( // Added type for item
                 <div key={item.id} className="flex items-center space-x-4">
                   <img
-                    src={item.image}
+                    src={item.image || '/placeholder.png'} // Corrected the escaped quote
                     alt={item.name}
                     className="w-16 h-16 object-cover rounded-md"
                   />
@@ -278,8 +380,8 @@ const Checkout = () => {
           </div>
 
           <button
-            onClick={handleSubmit}
-            disabled={loading}
+            onClick={handleSubmit} // Changed from type="submit" to onClick
+            disabled={loading || state.items.length === 0} // Disable if cart is empty
             className="w-full bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 text-white py-3 px-4 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-primary-400 dark:disabled:bg-primary-600 dark:disabled:opacity-70 transition-colors duration-300"
           >
             {loading ? (
@@ -308,8 +410,8 @@ const Checkout = () => {
               </span>
             ) : (
               <span className="flex items-center justify-center">
-                <Truck className="h-5 w-5 mr-2" />
-                Place Order
+                <CreditCard className="h-5 w-5 mr-2" /> {/* Changed Icon */}
+                Proceed to Pay ${Number(state.total).toFixed(2)}
               </span>
             )}
           </button>

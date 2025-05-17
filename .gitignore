@@ -24,3 +24,16 @@ dist-ssr
 *.sw?
 *.env
 account-key.json
+.qodo
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.webp
+*.ico
+*.bmp
+*.tiff
+*.tif
+*.heic
+*.heif
